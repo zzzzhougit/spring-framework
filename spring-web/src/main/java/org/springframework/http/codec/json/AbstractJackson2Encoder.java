@@ -44,6 +44,7 @@ import org.springframework.core.codec.EncodingException;
 import org.springframework.core.codec.Hints;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferFactory;
+import org.springframework.core.log.LogFormatUtils;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.HttpMessageEncoder;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -141,8 +142,11 @@ public abstract class AbstractJackson2Encoder extends Jackson2CodecSupport imple
 	private DataBuffer encodeValue(Object value, @Nullable MimeType mimeType, DataBufferFactory bufferFactory,
 			ResolvableType elementType, @Nullable Map<String, Object> hints, JsonEncoding encoding) {
 
-		if (logger.isDebugEnabled() && !Hints.isLoggingSuppressed(hints)) {
-			logger.debug(Hints.getLogPrefix(hints) + "Encoding [" + value + "]");
+		if (!Hints.isLoggingSuppressed(hints)) {
+			LogFormatUtils.traceDebug(logger, traceOn -> {
+				String formatted = LogFormatUtils.formatValue(value, !traceOn);
+				return Hints.getLogPrefix(hints) + "Encoding [" + formatted + "]";
+			});
 		}
 
 		JavaType javaType = getJavaType(elementType.getType(), null);
