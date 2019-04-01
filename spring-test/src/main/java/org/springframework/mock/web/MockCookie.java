@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -81,7 +81,8 @@ public class MockCookie extends Cookie {
 		String name = cookieParts[0];
 		String[] valueAndAttributes = cookieParts[1].split("\\s*;\\s*", 2);
 		String value = valueAndAttributes[0];
-		String[] attributes = valueAndAttributes.length > 1 ? valueAndAttributes[1].split("\\s*;\\s*") : new String[0];
+		String[] attributes =
+				(valueAndAttributes.length > 1 ? valueAndAttributes[1].split("\\s*;\\s*") : new String[0]);
 
 		MockCookie cookie = new MockCookie(name, value);
 		for (String attribute : attributes) {

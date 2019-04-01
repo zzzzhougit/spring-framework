@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,6 +18,7 @@ package org.springframework.web.reactive.function.server.support;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import reactor.core.publisher.Mono;
@@ -27,11 +28,13 @@ import org.springframework.http.codec.HttpMessageReader;
 import org.springframework.http.codec.ServerCodecConfigurer;
 import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
+import org.springframework.web.reactive.function.server.HandlerFunction;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.handler.AbstractHandlerMapping;
 import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.util.pattern.PathPattern;
 
 /**
  * {@code HandlerMapping} implementation that supports {@link RouterFunction RouterFunctions}.
@@ -111,7 +114,7 @@ public class RouterFunctionMapping extends AbstractHandlerMapping implements Ini
 	}
 
 	private List<RouterFunction<?>> routerFunctions() {
-		List<RouterFunction<?>> functions = this.getApplicationContext()
+		List<RouterFunction<?>> functions = obtainApplicationContext()
 				.getBeanProvider(RouterFunction.class)
 				.orderedStream()
 				.map(router -> (RouterFunction<?>)router)
@@ -142,11 +145,31 @@ public class RouterFunctionMapping extends AbstractHandlerMapping implements Ini
 	protected Mono<?> getHandlerInternal(ServerWebExchange exchange) {
 		if (this.routerFunction != null) {
 			ServerRequest request = ServerRequest.create(exchange, this.messageReaders);
-			exchange.getAttributes().put(RouterFunctions.REQUEST_ATTRIBUTE, request);
-			return this.routerFunction.route(request);
+			return this.routerFunction.route(request)
+					.doOnNext(handler -> setAttributes(exchange.getAttributes(), request, handler));
 		}
 		else {
 			return Mono.empty();
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private void setAttributes(Map<String, Object> attributes, ServerRequest serverRequest,
+			HandlerFunction<?> handlerFunction) {
+
+		attributes.put(RouterFunctions.REQUEST_ATTRIBUTE, serverRequest);
+		attributes.put(BEST_MATCHING_HANDLER_ATTRIBUTE, handlerFunction);
+
+		PathPattern matchingPattern =
+				(PathPattern) attributes.get(RouterFunctions.MATCHING_PATTERN_ATTRIBUTE);
+		if (matchingPattern != null) {
+			attributes.put(BEST_MATCHING_PATTERN_ATTRIBUTE, matchingPattern);
+		}
+		Map<String, String> uriVariables =
+				(Map<String, String>) attributes
+						.get(RouterFunctions.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
+		if (uriVariables != null) {
+			attributes.put(URI_TEMPLATE_VARIABLES_ATTRIBUTE, uriVariables);
 		}
 	}
 
